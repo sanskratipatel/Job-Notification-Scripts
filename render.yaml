@@ -1,0 +1,21 @@
+services:
+  - type: worker          # background worker – runs 24/7, never sleeps
+    name: job-notifier
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py --schedule
+    plan: free
+
+    # Persistent disk – keeps seen_jobs.json across deploys (no duplicate alerts)
+    disk:
+      name: job-data
+      mountPath: /opt/render/project/data
+      sizeGB: 1
+
+    envVars:
+      - key: GMAIL_USER
+        value: patelsanskrati05@gmail.com
+      - key: GMAIL_APP_PASSWORD
+        sync: false          # set manually in Render dashboard (secret)
+      - key: CHECK_INTERVAL_HOURS
+        value: "2"

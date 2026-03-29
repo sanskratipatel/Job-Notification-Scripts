@@ -1,5 +1,12 @@
-"""Track already-notified jobs so we never send duplicate alerts."""
+"""
+Track already-notified jobs so we never send duplicate alerts.
 
+Storage priority:
+  1. /opt/render/project/data/  (Render persistent disk mount point)
+  2. ./data/                    (local development)
+"""
+
+import os
 import json
 import hashlib
 import logging
@@ -7,7 +14,11 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-SEEN_FILE = Path(__file__).parent.parent / "data" / "seen_jobs.json"
+# Render persistent disk mounts at /opt/render/project/data by convention
+_RENDER_DATA = Path("/opt/render/project/data")
+_LOCAL_DATA  = Path(__file__).parent.parent / "data"
+
+SEEN_FILE = (_RENDER_DATA / "seen_jobs.json") if _RENDER_DATA.exists() else (_LOCAL_DATA / "seen_jobs.json")
 
 
 def _job_id(job: dict) -> str:
