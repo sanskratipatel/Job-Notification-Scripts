@@ -6,3 +6,5 @@ python-dotenv==1.0.1
 cloudscraper==1.2.71
 fake-useragent==1.5.1
 urllib3==2.2.1
+fastapi==0.111.0
+uvicorn==0.29.0

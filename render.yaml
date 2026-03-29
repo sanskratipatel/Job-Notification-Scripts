@@ -1,21 +1,15 @@
 services:
-  - type: worker          # background worker – runs 24/7, never sleeps
+  - type: web
     name: job-notifier
     runtime: python3
     buildCommand: pip install -r requirements.txt
-    startCommand: python3 main.py --schedule
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
     plan: free
-
-    # Persistent disk – keeps seen_jobs.json across deploys (no duplicate alerts)
-    disk:
-      name: job-data
-      mountPath: /opt/render/project/data
-      sizeGB: 1
 
     envVars:
       - key: GMAIL_USER
         value: patelsanskrati05@gmail.com
       - key: GMAIL_APP_PASSWORD
-        sync: false          # set manually in Render dashboard (secret)
+        sync: false
       - key: CHECK_INTERVAL_HOURS
         value: "2"
