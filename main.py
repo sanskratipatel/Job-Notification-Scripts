@@ -33,7 +33,7 @@ from scrapers import (
 )
 from utils.job_filter import filter_jobs
 from utils.deduplicator import filter_new, reset as reset_seen
-from notifiers import email_notifier, whatsapp_notifier
+from notifiers import email_notifier
 
 # ── Logging ────────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -122,15 +122,10 @@ def run(dry_run: bool = False) -> None:
             print(f"    {j['url']}\n")
         return
 
-    # 3) Send notifications
+    # 3) Send notifications (email only)
     email_ok = email_notifier.send(new_jobs)
-    wa_ok = whatsapp_notifier.send(new_jobs)
 
-    logger.info(
-        "Notifications – Email: %s | WhatsApp: %s",
-        "OK" if email_ok else "FAILED",
-        "OK" if wa_ok else "FAILED",
-    )
+    logger.info("Notifications – Email: %s", "OK" if email_ok else "FAILED")
     logger.info("Job check complete")
 
 

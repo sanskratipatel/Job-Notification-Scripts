@@ -23,18 +23,29 @@ def _build_html(jobs: list[dict]) -> str:
         skills = j.get("skills") or "—"
         rows += f"""
         <tr>
-          <td style="padding:10px;border-bottom:1px solid #eee;">
-            <a href="{j['url']}" style="font-size:15px;font-weight:bold;color:#1a73e8;text-decoration:none;">
+          <td style="padding:16px 20px;border-bottom:2px solid #f0f0f0;">
+            <a href="{j['url']}" style="font-size:16px;font-weight:bold;color:#1a73e8;text-decoration:none;">
               {j['title']}
             </a><br>
-            <span style="color:#555;font-size:13px;">🏢 {j['company']}</span><br>
-            <span style="color:#777;font-size:12px;">
+            <span style="color:#444;font-size:13px;font-weight:600;">🏢 {j['company']}</span><br>
+            <span style="color:#666;font-size:12px;line-height:1.8;">
               📍 {j['location']} &nbsp;|&nbsp;
               💰 {salary} &nbsp;|&nbsp;
               🕐 Exp: {exp}<br>
               🛠 Skills: {skills}<br>
-              📅 Posted: {posted} &nbsp;|&nbsp; 🌐 Source: {j['source']}
-            </span>
+              📅 Posted: {posted} &nbsp;|&nbsp; 🌐 {j['source']}
+            </span><br><br>
+            <a href="{j['url']}"
+               style="display:inline-block;padding:9px 22px;background:#34a853;color:#fff;
+                      font-size:13px;font-weight:bold;border-radius:5px;text-decoration:none;">
+              ✅ Apply Now
+            </a>
+            &nbsp;
+            <a href="{j['url']}"
+               style="display:inline-block;padding:9px 22px;background:#f1f3f4;color:#1a73e8;
+                      font-size:12px;font-weight:bold;border-radius:5px;text-decoration:none;">
+              🔗 {j['url'][:60]}{'...' if len(j['url']) > 60 else ''}
+            </a>
           </td>
         </tr>"""
 
