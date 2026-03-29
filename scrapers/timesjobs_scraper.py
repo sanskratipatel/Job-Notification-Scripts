@@ -83,7 +83,7 @@ def scrape(keyword: str = "python backend developer", location: str = "india", *
         # HTML fallback – parse whatever structure we get
         from bs4 import BeautifulSoup
         import re
-        soup = BeautifulSoup(resp.text, "lxml")
+        soup = BeautifulSoup(resp.text, "html.parser")
         # Try generic job link pattern
         job_links = soup.find_all("a", href=re.compile(r"/job-detail/"))
         seen_hrefs = set()

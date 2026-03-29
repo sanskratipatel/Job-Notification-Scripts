@@ -39,7 +39,7 @@ def scrape(keyword: str = "python backend developer", **_) -> list[dict]:
         logger.warning("Shine: request failed: %s", e)
         return jobs
 
-    soup = BeautifulSoup(resp.text, "lxml")
+    soup = BeautifulSoup(resp.text, "html.parser")
 
     # Shine uses Next.js CSS modules – class names have hashes like jobCardNova_bigCard__W2xn3
     cards = soup.find_all("div", class_=re.compile(r"jobCardNova_bigCard__"))

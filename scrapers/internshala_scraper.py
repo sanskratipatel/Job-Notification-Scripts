@@ -53,7 +53,7 @@ def scrape(keyword: str = "python backend", **_) -> list[dict]:
             logger.warning("Internshala: request failed: %s", e)
             continue
 
-        soup = BeautifulSoup(resp.text, "lxml")
+        soup = BeautifulSoup(resp.text, "html.parser")
         cards = soup.find_all("div", class_="individual_internship")
 
         for card in cards:

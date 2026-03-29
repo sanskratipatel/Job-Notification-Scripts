@@ -42,7 +42,7 @@ def safe_get(session: requests.Session, url: str, params=None, headers=None, tim
 
 
 def parse_html(html: str) -> BeautifulSoup:
-    return BeautifulSoup(html, "lxml")
+    return BeautifulSoup(html, "html.parser")
 
 
 def normalize_job(
