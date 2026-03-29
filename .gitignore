@@ -1,0 +1,31 @@
+# Secrets – NEVER commit these
+.env
+
+# Virtual environment
+venv/
+env/
+.venv/
+__pyenv__/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Logs
+*.log
+job_notifier.log
+
+# Seen jobs data (local state, not needed in repo)
+# data/seen_jobs.json  ← tracked as empty placeholder via data/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
