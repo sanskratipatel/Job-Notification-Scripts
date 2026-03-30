@@ -30,6 +30,8 @@ from scrapers import (
     timesjobs_scraper,
     shine_scraper,
     wellfound_scraper,
+    glassdoor_scraper,
+    foundit_scraper,
 )
 from utils.job_filter import filter_jobs
 from utils.deduplicator import filter_new, reset as reset_seen
@@ -57,6 +59,8 @@ PORTAL_MAP = {
     "timesjobs": timesjobs_scraper.scrape,
     "shine": shine_scraper.scrape,
     "wellfound": wellfound_scraper.scrape,
+    "glassdoor": glassdoor_scraper.scrape,
+    "foundit": foundit_scraper.scrape,
 }
 
 

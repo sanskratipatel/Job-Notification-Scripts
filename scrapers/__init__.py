@@ -6,4 +6,6 @@ from . import (
     timesjobs_scraper,
     shine_scraper,
     wellfound_scraper,
+    glassdoor_scraper,
+    foundit_scraper,
 )

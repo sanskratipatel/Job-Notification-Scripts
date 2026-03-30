@@ -48,15 +48,23 @@ EXCLUDE_TITLES = [
     "java backend", "java developer", ".net developer", "ruby", "php developer",
     "node.js", "nodejs", "golang", "go developer", "kotlin", "scala",
     "c# developer", ".net backend", "c++ developer",
+    # Seniority-based exclusions (require too much experience)
+    "principal", "staff engineer", "engineering manager", "vp of engineering",
+    "head of engineering", "director",
 ]
+
+# ── Title keywords that indicate senior roles (hard exclude if exp > 2 yrs) ────
+SENIOR_TITLE_KEYWORDS = ["senior", "sr.", "lead", "architect", "manager", "head", "principal"]
 
 # ── Portals to enable / disable ────────────────────────────────────────────────
 ENABLED_PORTALS = {
     "linkedin": True,       # ✅ Working
     "internshala": True,    # ✅ Working
     "shine": True,          # ✅ Working
-    "timesjobs": True,      # ⚠️  May work depending on network
-    "wellfound": True,      # ⚠️  Startup roles (remote/global)
-    "naukri": False,        # ❌ Requires reCAPTCHA – blocked
-    "indeed": False,        # ❌ Requires login/reCAPTCHA – blocked
+    "glassdoor": True,      # ✅ New
+    "foundit": True,        # ✅ New (formerly Monster India)
+    "timesjobs": False,     # ❌ 404 errors
+    "wellfound": False,     # ❌ 403 blocked
+    "naukri": False,        # ❌ reCAPTCHA
+    "indeed": False,        # ❌ reCAPTCHA
 }
