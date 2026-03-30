@@ -1,24 +1,24 @@
 """
-Naukri.com scraper.
-Strategy: visit homepage first to get session cookies, then call their JSON search API.
+Naukri.com scraper using logged-in session cookies.
+Cookies are read from .env – no password stored.
 """
 
+import os
 import logging
 import time
 import random
+import requests
 from .base_scraper import normalize_job
 
 logger = logging.getLogger(__name__)
 
-HOMEPAGE = "https://www.naukri.com/"
 SEARCH_API = "https://www.naukri.com/jobapi/v3/search"
 
-# Headers that match what a real browser sends to Naukri's search API
 API_HEADERS = {
     "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "Mozilla/5.0 (X11; Linux x86_64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/122.0.0.0 Safari/537.36"
+        "Chrome/145.0.0.0 Safari/537.36"
     ),
     "Accept": "application/json",
     "Content-Type": "application/json",
@@ -30,41 +30,19 @@ API_HEADERS = {
 }
 
 
-def _make_naukri_session():
-    import requests
-    s = requests.Session()
-    s.headers.update({
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/122.0.0.0 Safari/537.36"
-        ),
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-IN,en;q=0.9",
-    })
-    try:
-        # Visit homepage to get session cookies (required by their API)
-        s.get(HOMEPAGE, timeout=15)
-        time.sleep(random.uniform(1.0, 2.0))
-    except Exception as e:
-        logger.warning("Naukri: homepage warmup failed: %s", e)
-    return s
-
-
-def _salary_text(job: dict) -> str:
-    try:
-        for ph in job.get("placeholders", []):
-            if ph.get("type") == "salary":
-                label = ph.get("label", "")
-                if label and label != "Not disclosed":
-                    return label
-        mn = job.get("minimumSalary") or 0
-        mx = job.get("maximumSalary") or 0
-        if mn or mx:
-            return f"{mn // 100000:.1f}-{mx // 100000:.1f} LPA"
-    except Exception:
-        pass
-    return "Not disclosed"
+def _get_cookies() -> dict | None:
+    nauk_at = os.getenv("NAUKRI_NAUK_AT", "")
+    nauk_sid = os.getenv("NAUKRI_NAUK_SID", "")
+    is_login = os.getenv("NAUKRI_IS_LOGIN", "")
+    if not nauk_at or not nauk_sid:
+        return None
+    return {
+        "nauk_at": nauk_at,
+        "nauk_sid": nauk_sid,
+        "nauk_rt": nauk_sid,
+        "is_login": is_login,
+        "J": "0",
+    }
 
 
 def _exp_text(job: dict) -> str:
@@ -81,13 +59,38 @@ def _loc_text(job: dict) -> str:
     return ""
 
 
-def scrape(keyword: str = "python backend developer", location: str = "india", pages: int = 2) -> list[dict]:
-    session = _make_naukri_session()
-    jobs = []
+def _salary_text(job: dict) -> str:
+    for ph in job.get("placeholders", []):
+        if ph.get("type") == "salary":
+            label = ph.get("label", "")
+            if label and label.lower() != "not disclosed":
+                return label
+    mn = job.get("minimumSalary") or 0
+    mx = job.get("maximumSalary") or 0
+    if mn or mx:
+        return f"{mn // 100000:.1f}-{mx // 100000:.1f} LPA"
+    return "Not disclosed"
 
+
+def scrape(keyword: str = "python backend developer", location: str = "india", pages: int = 2) -> list[dict]:
+    cookies = _get_cookies()
+    if not cookies:
+        logger.warning("Naukri: cookies not set in .env – skipping")
+        return []
+
+    session = requests.Session()
+    session.cookies.update(cookies)
+    # Also send token as Bearer header – Naukri API requires both
+    session.headers.update({
+        **API_HEADERS,
+        "Authorization": f"Bearer {cookies['nauk_at']}",
+    })
+
+    jobs = []
     loc_param = "" if location.lower() in ("india", "remote") else location
 
     for page in range(1, pages + 1):
+        time.sleep(random.uniform(2, 4))
         params = {
             "noOfResults": 20,
             "urlType": "search_by_key_loc",
@@ -95,38 +98,33 @@ def scrape(keyword: str = "python backend developer", location: str = "india", p
             "keyword": keyword,
             "location": loc_param,
             "experience": 0,
-            "salary": 480000,   # ~4.8 LPA
+            "salary": 480000,
             "pageNo": page,
-            "jobAge": 3,        # last 3 days
+            "jobAge": 3,
         }
-        time.sleep(random.uniform(1.5, 3.0))
         try:
             resp = session.get(SEARCH_API, params=params, headers=API_HEADERS, timeout=20)
             if resp.status_code != 200:
-                logger.warning("Naukri API: HTTP %d for '%s'", resp.status_code, keyword)
-                continue
+                logger.warning("Naukri: HTTP %d for '%s' (cookies may have expired)", resp.status_code, keyword)
+                break
             data = resp.json()
         except Exception as e:
-            logger.warning("Naukri: request/parse failed for '%s': %s", keyword, e)
-            continue
+            logger.warning("Naukri: request failed: %s", e)
+            break
 
         for j in data.get("jobDetails", []):
             title = j.get("title", "")
             if not title:
                 continue
-
-            company = j.get("companyName", "Unknown")
-            job_id = j.get("jobId", "")
-            # Naukri job URLs use the slug from ambitionBox or direct job ID
             slug = j.get("staticUrl", "")
+            job_id = j.get("jobId", "")
             url = f"https://www.naukri.com/{slug}" if slug else f"https://www.naukri.com/job-listings-{job_id}"
-
             skills_raw = j.get("tagsAndSkills", "") or ""
             skills = ", ".join(s.strip() for s in skills_raw.split(",")[:6] if s.strip())
 
             jobs.append(normalize_job(
                 title=title,
-                company=company,
+                company=j.get("companyName", "Unknown"),
                 location=_loc_text(j) or location,
                 salary=_salary_text(j),
                 experience=_exp_text(j) or "0-2 years",
