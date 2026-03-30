@@ -66,5 +66,5 @@ ENABLED_PORTALS = {
     "timesjobs": False,     # ❌ 404 errors
     "wellfound": False,     # ❌ 403 blocked
     "naukri": False,        # ❌ reCAPTCHA
-    "indeed": False,        # ❌ reCAPTCHA
+    "indeed": False,        # ❌ RSS feed blocked (429), reCAPTCHA on HTML
 }
