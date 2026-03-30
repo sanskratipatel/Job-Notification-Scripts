@@ -8,4 +8,5 @@ from . import (
     wellfound_scraper,
     glassdoor_scraper,
     foundit_scraper,
+    email_jobs_scraper,
 )

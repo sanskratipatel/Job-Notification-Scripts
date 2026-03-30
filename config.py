@@ -65,6 +65,7 @@ ENABLED_PORTALS = {
     "foundit": True,        # ✅ New (formerly Monster India)
     "timesjobs": False,     # ❌ 404 errors
     "wellfound": False,     # ❌ 403 blocked
-    "naukri": False,        # ❌ reCAPTCHA at API level – check manually on site
-    "indeed": False,        # ❌ RSS feed blocked (429), reCAPTCHA on HTML
+    "naukri": False,        # ❌ reCAPTCHA at API level
+    "indeed": False,        # ❌ Cloudflare blocked
+    "email_alerts": True,   # ✅ Reads Indeed+Naukri job alert emails from Gmail
 }

@@ -32,6 +32,7 @@ from scrapers import (
     wellfound_scraper,
     glassdoor_scraper,
     foundit_scraper,
+    email_jobs_scraper,
 )
 from utils.job_filter import filter_jobs
 from utils.deduplicator import filter_new, reset as reset_seen
@@ -61,6 +62,7 @@ PORTAL_MAP = {
     "wellfound": wellfound_scraper.scrape,
     "glassdoor": glassdoor_scraper.scrape,
     "foundit": foundit_scraper.scrape,
+    "email_alerts": email_jobs_scraper.scrape,
 }
 
 
@@ -68,6 +70,8 @@ def collect_jobs() -> list[dict]:
     """Run all enabled scrapers across all keywords and return raw jobs."""
     all_jobs: list[dict] = []
 
+    # Portals that need no keyword/location – called once directly
+    no_keyword_portals = {"email_alerts"}
     # Portals that take a single keyword slug (no location loop needed)
     single_kw_portals = {"internshala", "shine", "wellfound"}
 
@@ -78,7 +82,13 @@ def collect_jobs() -> list[dict]:
         if scrape_fn is None:
             continue
 
-        if portal in single_kw_portals:
+        if portal in no_keyword_portals:
+            try:
+                jobs = scrape_fn()
+                all_jobs.extend(jobs)
+            except Exception as e:
+                logger.error("Scraper %s crashed: %s", portal, e)
+        elif portal in single_kw_portals:
             # Just call once with first keyword
             try:
                 jobs = scrape_fn(keyword=SEARCH_KEYWORDS[0])
