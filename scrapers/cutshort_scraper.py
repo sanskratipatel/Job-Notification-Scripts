@@ -1,17 +1,19 @@
 """
-Cutshort.io scraper – tech-focused India job board with good API.
-No auth needed for basic search.
+Cutshort.io scraper – tech-focused India job board.
+Uses DuckDuckGo site search since Cutshort's API is not public.
 """
 
 import logging
+import re
 import time
 import random
 import requests
+from bs4 import BeautifulSoup
 from .base_scraper import normalize_job
 
 logger = logging.getLogger(__name__)
 
-API_URL = "https://cutshort.io/api/web/jobs"
+DDG_URL = "https://html.duckduckgo.com/html/"
 
 HEADERS = {
     "User-Agent": (
@@ -19,69 +21,73 @@ HEADERS = {
         "AppleWebKit/537.36 (KHTML, like Gecko) "
         "Chrome/122.0.0.0 Safari/537.36"
     ),
-    "Accept": "application/json",
-    "Referer": "https://cutshort.io/jobs",
-    "Origin": "https://cutshort.io",
+    "Accept": "text/html,application/xhtml+xml",
+    "Accept-Language": "en-IN,en;q=0.9",
+    "Referer": "https://duckduckgo.com/",
 }
 
 
 def scrape(keyword: str = "python backend", **_) -> list[dict]:
     jobs = []
-    time.sleep(random.uniform(1.5, 2.5))
+    time.sleep(random.uniform(2, 3.5))
 
-    payload = {
-        "title": keyword,
-        "locations": [],
-        "skills": ["Python"],
-        "minExp": 0,
-        "maxExp": 2,
-        "workType": [],
-        "page": 1,
-        "limit": 20,
-    }
-
+    query = f'site:cutshort.io/job "{keyword}" OR "python" OR "backend" "0-2" OR "1-2" OR "fresher"'
     try:
-        resp = requests.post(API_URL, json=payload, headers=HEADERS, timeout=20)
+        data = {"q": query, "df": "m"}   # last month
+        resp = requests.post(DDG_URL, data=data, headers=HEADERS, timeout=20)
         if resp.status_code != 200:
-            logger.warning("Cutshort: HTTP %d", resp.status_code)
+            logger.warning("Cutshort: DDG returned HTTP %d", resp.status_code)
             return jobs
-        data = resp.json()
     except Exception as e:
         logger.warning("Cutshort: request failed: %s", e)
         return jobs
 
-    for j in data.get("data", []):
+    soup = BeautifulSoup(resp.text, "html.parser")
+    results = soup.find_all("div", class_=re.compile(r"result__body"))
+    seen_urls = set()
+
+    for result in results:
         try:
-            title = j.get("title", "")
-            company = j.get("company", {}).get("name", "Unknown")
-            loc_list = j.get("locations", [])
-            location = ", ".join(loc_list[:2]) if loc_list else "India"
-            slug = j.get("slug", "")
-            url = f"https://cutshort.io/job/{slug}" if slug else "https://cutshort.io/jobs"
+            link_tag = result.find("a", class_=re.compile(r"result__a"))
+            if not link_tag:
+                continue
 
-            min_exp = j.get("minExp", 0)
-            max_exp = j.get("maxExp", 2)
-            exp = f"{min_exp}-{max_exp} years"
+            href = link_tag.get("href", "")
+            if not href:
+                continue
 
-            min_sal = j.get("minSalary", 0) or 0
-            max_sal = j.get("maxSalary", 0) or 0
-            if min_sal or max_sal:
-                salary = f"{min_sal // 100000:.0f}-{max_sal // 100000:.0f} LPA"
-            else:
-                salary = "Not disclosed"
+            # Clean up DuckDuckGo redirect URLs
+            if "uddg=" in href:
+                import urllib.parse
+                parsed = urllib.parse.parse_qs(urllib.parse.urlparse(href).query)
+                href = parsed.get("uddg", [href])[0]
 
-            skills_list = j.get("skills", [])
-            skills = ", ".join(s.get("name", "") for s in skills_list[:6] if s.get("name"))
+            if "cutshort.io" not in href:
+                continue
+            if href in seen_urls:
+                continue
+            seen_urls.add(href)
+
+            title_text = link_tag.get_text(strip=True)
+
+            snippet_tag = result.find("a", class_=re.compile(r"result__snippet")) or result
+            snippet = snippet_tag.get_text(" ", strip=True) if snippet_tag else ""
+
+            # Extract company from title (Cutshort titles: "Job Title at Company")
+            company = "See listing"
+            at_match = re.search(r"\bat\s+([A-Za-z0-9][A-Za-z0-9\s&\-\.]+?)(?:\s*[-|–]|\s*$)", title_text)
+            if at_match:
+                company = at_match.group(1).strip()
 
             jobs.append(normalize_job(
-                title=title,
+                title=title_text or "Python/Backend Developer",
                 company=company,
-                location=location,
-                salary=salary,
-                experience=exp,
-                url=url,
+                location="India",
+                salary="Not disclosed",
+                experience="0-2 years",
+                url=href,
                 source="Cutshort",
-                skills=skills,
+                skills="Python, Backend",
             ))
         except Exception as e:
             logger.debug("Cutshort job parse error: %s", e)

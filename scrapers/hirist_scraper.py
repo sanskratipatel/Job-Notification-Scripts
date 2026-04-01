@@ -1,17 +1,19 @@
 """
 Hirist.tech scraper – tech-focused India job board.
-Uses the public JSON API.
+Uses DuckDuckGo site search since Hirist is fully client-side rendered (React).
 """
 
 import logging
+import re
 import time
 import random
 import requests
+from bs4 import BeautifulSoup
 from .base_scraper import normalize_job
 
 logger = logging.getLogger(__name__)
 
-API_URL = "https://www.hirist.tech/api/v2/jobs"
+DDG_URL = "https://html.duckduckgo.com/html/"
 
 HEADERS = {
     "User-Agent": (
@@ -19,79 +21,70 @@ HEADERS = {
         "AppleWebKit/537.36 (KHTML, like Gecko) "
         "Chrome/122.0.0.0 Safari/537.36"
     ),
-    "Accept": "application/json",
-    "Referer": "https://www.hirist.tech/jobs/",
+    "Accept": "text/html,application/xhtml+xml",
+    "Accept-Language": "en-IN,en;q=0.9",
+    "Referer": "https://duckduckgo.com/",
 }
 
 
 def scrape(keyword: str = "python backend", **_) -> list[dict]:
     jobs = []
-    time.sleep(random.uniform(1.5, 2.5))
+    time.sleep(random.uniform(2, 3.5))
 
-    params = {
-        "keywords": keyword,
-        "minExp": 0,
-        "maxExp": 2,
-        "page": 1,
-        "limit": 20,
-    }
-
+    query = f'site:hirist.tech "{keyword}" OR "python developer" OR "backend developer"'
     try:
-        resp = requests.get(API_URL, params=params, headers=HEADERS, timeout=20)
+        data = {"q": query, "df": "m"}   # last month
+        resp = requests.post(DDG_URL, data=data, headers=HEADERS, timeout=20)
         if resp.status_code != 200:
-            logger.warning("Hirist: HTTP %d", resp.status_code)
+            logger.warning("Hirist: DDG returned HTTP %d", resp.status_code)
             return jobs
-        data = resp.json()
     except Exception as e:
         logger.warning("Hirist: request failed: %s", e)
         return jobs
 
-    job_list = data.get("jobs") or data.get("data") or data.get("results") or []
-    if not isinstance(job_list, list):
-        logger.warning("Hirist: unexpected response shape")
-        return jobs
+    soup = BeautifulSoup(resp.text, "html.parser")
+    results = soup.find_all("div", class_=re.compile(r"result__body"))
+    seen_urls = set()
 
-    for j in job_list:
+    for result in results:
         try:
-            title = j.get("jobTitle") or j.get("title", "")
-            company = j.get("companyName") or j.get("company", {}).get("name", "Unknown")
-            location = j.get("location") or j.get("city", "India")
-            if isinstance(location, list):
-                location = ", ".join(location[:2])
+            link_tag = result.find("a", class_=re.compile(r"result__a"))
+            if not link_tag:
+                continue
 
-            job_id = j.get("jobId") or j.get("id") or j.get("slug", "")
-            url = j.get("jobUrl") or j.get("url") or (
-                f"https://www.hirist.tech/j/{job_id}" if job_id else "https://www.hirist.tech/jobs/"
-            )
+            href = link_tag.get("href", "")
+            if not href:
+                continue
 
-            min_exp = j.get("minExp") or j.get("experienceMin", 0) or 0
-            max_exp = j.get("maxExp") or j.get("experienceMax", 2) or 2
-            exp = f"{min_exp}-{max_exp} years"
+            # Clean up DuckDuckGo redirect URLs
+            if "uddg=" in href:
+                import urllib.parse
+                parsed = urllib.parse.parse_qs(urllib.parse.urlparse(href).query)
+                href = parsed.get("uddg", [href])[0]
 
-            min_sal = j.get("minSalary") or j.get("salaryMin", 0) or 0
-            max_sal = j.get("maxSalary") or j.get("salaryMax", 0) or 0
-            if min_sal or max_sal:
-                salary = f"{min_sal // 100000:.0f}-{max_sal // 100000:.0f} LPA"
-            else:
-                salary = "Not disclosed"
+            if "hirist" not in href:
+                continue
+            if href in seen_urls:
+                continue
+            seen_urls.add(href)
 
-            skills_raw = j.get("skills") or j.get("keySkills") or []
-            if isinstance(skills_raw, list):
-                skills = ", ".join(
-                    (s.get("name") or s if isinstance(s, (str, dict)) else "") for s in skills_raw[:6]
-                )
-            else:
-                skills = str(skills_raw)
+            title_text = link_tag.get_text(strip=True)
+
+            snippet_tag = result.find("a", class_=re.compile(r"result__snippet")) or result
+            snippet = snippet_tag.get_text(" ", strip=True) if snippet_tag else ""
+
+            company_match = re.search(r"at\s+([A-Z][A-Za-z0-9\s&\-\.]+?)(?:\s*[-|–]|\.|,|\s{2})", snippet)
+            company = company_match.group(1).strip() if company_match else "See listing"
 
             jobs.append(normalize_job(
-                title=title,
+                title=title_text or "Python/Backend Developer",
                 company=company,
-                location=location,
-                salary=salary,
-                experience=exp,
-                url=url,
+                location="India",
+                salary="Not disclosed",
+                experience="0-2 years",
+                url=href,
                 source="Hirist",
-                skills=skills,
+                skills="Python, Backend",
             ))
         except Exception as e:
             logger.debug("Hirist job parse error: %s", e)
