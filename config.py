@@ -58,14 +58,18 @@ SENIOR_TITLE_KEYWORDS = ["senior", "sr.", "lead", "architect", "manager", "head"
 
 # ── Portals to enable / disable ────────────────────────────────────────────────
 ENABLED_PORTALS = {
-    "linkedin": True,       # ✅ Working
-    "internshala": True,    # ✅ Working
-    "shine": True,          # ✅ Working
-    "glassdoor": True,      # ✅ New
-    "foundit": True,        # ✅ New (formerly Monster India)
-    "timesjobs": False,     # ❌ 404 errors
-    "wellfound": False,     # ❌ 403 blocked
-    "naukri": False,        # ❌ reCAPTCHA at API level
-    "indeed": False,        # ❌ Cloudflare blocked
-    "email_alerts": True,   # ✅ Reads Indeed+Naukri job alert emails from Gmail
+    "linkedin": True,        # ✅ Working
+    "internshala": True,     # ✅ Working
+    "shine": True,           # ✅ Working
+    "glassdoor": True,       # ✅ Working
+    "foundit": True,         # ✅ Working (formerly Monster India)
+    "email_alerts": True,    # ✅ Reads Indeed+Naukri job alert emails from Gmail
+    "linkedin_posts": True,  # ✅ LinkedIn hiring posts via DuckDuckGo
+    "cutshort": True,        # ✅ Cutshort.io tech jobs API
+    "hirist": True,          # ✅ Hirist.tech tech jobs API
+    "apna": True,            # ✅ Apna.co via DuckDuckGo search
+    "timesjobs": False,      # ❌ 404 errors
+    "wellfound": False,      # ❌ 403 blocked
+    "naukri": False,         # ❌ reCAPTCHA at API level
+    "indeed": False,         # ❌ Cloudflare blocked
 }

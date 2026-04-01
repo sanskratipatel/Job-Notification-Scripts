@@ -33,6 +33,10 @@ from scrapers import (
     glassdoor_scraper,
     foundit_scraper,
     email_jobs_scraper,
+    linkedin_posts_scraper,
+    cutshort_scraper,
+    hirist_scraper,
+    apna_scraper,
 )
 from utils.job_filter import filter_jobs
 from utils.deduplicator import filter_new, reset as reset_seen
@@ -63,6 +67,10 @@ PORTAL_MAP = {
     "glassdoor": glassdoor_scraper.scrape,
     "foundit": foundit_scraper.scrape,
     "email_alerts": email_jobs_scraper.scrape,
+    "linkedin_posts": linkedin_posts_scraper.scrape,
+    "cutshort": cutshort_scraper.scrape,
+    "hirist": hirist_scraper.scrape,
+    "apna": apna_scraper.scrape,
 }
 
 
@@ -71,9 +79,9 @@ def collect_jobs() -> list[dict]:
     all_jobs: list[dict] = []
 
     # Portals that need no keyword/location – called once directly
-    no_keyword_portals = {"email_alerts"}
+    no_keyword_portals = {"email_alerts", "linkedin_posts"}
     # Portals that take a single keyword slug (no location loop needed)
-    single_kw_portals = {"internshala", "shine", "wellfound"}
+    single_kw_portals = {"internshala", "shine", "wellfound", "cutshort", "hirist", "apna"}
 
     for portal, enabled in ENABLED_PORTALS.items():
         if not enabled:

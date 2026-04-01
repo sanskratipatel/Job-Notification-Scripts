@@ -9,4 +9,8 @@ from . import (
     glassdoor_scraper,
     foundit_scraper,
     email_jobs_scraper,
+    linkedin_posts_scraper,
+    cutshort_scraper,
+    hirist_scraper,
+    apna_scraper,
 )
